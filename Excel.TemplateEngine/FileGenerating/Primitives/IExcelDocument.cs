@@ -34,5 +34,9 @@ namespace SkbKontur.Excel.TemplateEngine.FileGenerating.Primitives
         void AddDescription([NotNull] string text);
 
         void CopyVbaInfoFrom([NotNull] IExcelDocument excelDocument);
+
+        bool TryGetCustomProperty(string key, [CanBeNull] out string value);
+
+        void SetCustomProperty(string key, string value);
     }
 }

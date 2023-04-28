@@ -5,9 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 
+using DocumentFormat.OpenXml.CustomProperties;
 using DocumentFormat.OpenXml.Drawing;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.VariantTypes;
 
 using JetBrains.Annotations;
 
@@ -166,6 +168,37 @@ namespace SkbKontur.Excel.TemplateEngine.FileGenerating.Primitives.Implementatio
             ThrowIfSpreadsheetDisposed();
             AssertWorksheetNameValid(name);
             spreadsheetDocument.WorkbookPart.Workbook.Sheets.Elements<Sheet>().ElementAt(index).Name = name;
+        }
+
+        public bool TryGetCustomProperty([CanBeNull] string key, [CanBeNull] out string value)
+        {
+            ThrowIfSpreadsheetDisposed();
+            var property = spreadsheetDocument.CustomFilePropertiesPart?.GetProperty(key);
+            value = property?.InnerText;
+            return value != null;
+        }
+
+        public void SetCustomProperty(string key, string value)
+        {
+            var customProps = spreadsheetDocument.CustomFilePropertiesPart
+                              ?? spreadsheetDocument.AddCustomFilePropertiesPart();
+            // ReSharper disable once ConstantNullCoalescingCondition
+            customProps.Properties ??= new Properties();
+
+            var existentProperty = customProps.GetProperty(key);
+            existentProperty?.Remove();
+            customProps.Properties.AppendChild(new CustomDocumentProperty
+                {
+                    VTLPWSTR = new VTLPWSTR(value),
+                    FormatId = "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}",
+                    Name = key
+                });
+            var pid = 2;
+            foreach (var item in customProps.Properties.Cast<CustomDocumentProperty>())
+            {
+                item.PropertyId = pid++;
+            }
+            customProps.Properties.Save();
         }
 
         [NotNull]
